@@ -187,13 +187,13 @@ def create_docx(sorted_results, session, template_path, output_path, title, logo
                     for p in step['parameters']:
                         paragraph = document.add_paragraph("{}    ".format(indent_str), style='Step Param Parag')
                         paragraph.add_run("{} = {}".format(p['name'], _format_argval(p['value'])), style='Step Param')
-                if 'statusDetails' in step and ('message' in step['statusDetails'] or 'trace' in step['statusDetails']):
-                    if 'message' in step['statusDetails']:
-                        document.add_paragraph(step['statusDetails']['message'], style=stepstyle)
-                    if 'trace' in step['statusDetails']:
-                        table = document.add_table(rows=1, cols=1, style="Trace table")
-                        hdr_cells = table.rows[0].cells
-                        hdr_cells[0].add_paragraph(step['statusDetails']['trace']+'\n', style='Code')
+                # if 'statusDetails' in step and ('message' in step['statusDetails'] or 'trace' in step['statusDetails']):
+                #     if 'message' in step['statusDetails']:
+                #         document.add_paragraph(step['statusDetails']['message'], style=stepstyle)
+                #     if 'trace' in step['statusDetails']:
+                #         table = document.add_table(rows=1, cols=1, style="Trace table")
+                #         hdr_cells = table.rows[0].cells
+                #         hdr_cells[0].add_paragraph(step['statusDetails']['trace']+'\n', style='Code')
                 print_attachments(document, step)
                 print_steps(document, step, indent+1)
 
@@ -210,17 +210,17 @@ def create_docx(sorted_results, session, template_path, output_path, title, logo
             title = 'Allure'
         document.add_heading(title, 0)
         document.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    document.add_paragraph('Test Report', style='Subtitle')
+    document.add_paragraph('Отчет по тестированию', style='Subtitle')
     document.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    document.add_paragraph('Test Session Summary', style='Alternative Heading 1')
+    document.add_paragraph('Итоговые результаты:', style='Alternative Heading 1')
 
     if not sorted_results:
         document.add_paragraph('No test result files were found.')
     else:
         table = document.add_table(rows=1, cols=2)
         summary_cell = table.rows[0].cells[0]
-        summary_cell.add_paragraph('Start: {}\nEnd: {}\nDuration: {}'.format(session['start'], session['stop'], session['duration']))
+        summary_cell.add_paragraph('Начало: {}\nКонец: {}\nДлительность: {}'.format(session['start'], session['stop'], session['duration']))
 
         results_strs = []
         for item in session['results']:
@@ -232,8 +232,8 @@ def create_docx(sorted_results, session, template_path, output_path, title, logo
         run = paragraph.add_run()
         run.add_picture(session['piechart_source'], width=Mm(75))
 
-        document.add_paragraph('Test Results', style="TOC Header")
-        create_TOC(document)
+        #document.add_paragraph('Test Results', style="TOC Header")
+        #create_TOC(document)
 
         document.add_page_break()
 
@@ -243,53 +243,53 @@ def create_docx(sorted_results, session, template_path, output_path, title, logo
             if 'description' in test:
                 document.add_paragraph(test['description'])
             else:
-                document.add_paragraph('No description available.')
+                document.add_paragraph('(Описание теста отсутствует)')
 
             if 'parameters' in test:
-                document.add_heading('Parameters', level=2)
+                document.add_heading('Параметры:', level=2)
                 for p in test['parameters']:
                     document.add_paragraph("{}: {}".format(p['name'], p['value']), style='Step')
 
-            if 'statusDetails' in test and ('message' in test['statusDetails'] or 'trace' in test['statusDetails']):
-                document.add_heading('Details', level=2)
-                if test['status'] in ["failed", "broken"]:
-                    style = "Normal Failed"
-                else:
-                    style = None
-                if 'message' in test['statusDetails']:
-                    document.add_paragraph(test['statusDetails']['message'], style=style)
-                if 'trace' in test['statusDetails']:
-                    table = document.add_table(rows=1, cols=1, style="Trace table")
-                    hdr_cells = table.rows[0].cells
-                    hdr_cells[0].add_paragraph(test['statusDetails']['trace']+'\n', style='Code')
+            # if 'statusDetails' in test and ('message' in test['statusDetails'] or 'trace' in test['statusDetails']):
+            #     document.add_heading('Details', level=2)
+            #     if test['status'] in ["failed", "broken"]:
+            #         style = "Normal Failed"
+            #     else:
+            #         style = None
+            #     if 'message' in test['statusDetails']:
+            #         document.add_paragraph(test['statusDetails']['message'], style=style)
+            #     if 'trace' in test['statusDetails']:
+            #         table = document.add_table(rows=1, cols=1, style="Trace table")
+            #         hdr_cells = table.rows[0].cells
+            #         hdr_cells[0].add_paragraph(test['statusDetails']['trace']+'\n', style='Code')
 
             if not detail_level == "compact":
                 if (detail_level == "full") or (detail_level == "full_onfail" and test['status'] in ['failed', 'broken']):
-                    document.add_heading('Test Setup', level=2)
+                    document.add_heading('Предворительные шаги:', level=2)
                     for parent in test['parents']:
                         if 'befores' in parent:
                             for before in parent['befores']:
-                                document.add_paragraph('[Fixture] {}'.format(before['name']), style="Step")
+                                #document.add_paragraph('[Fixture] {}'.format(before['name']), style="Step")
                                 print_attachments(document, before)
                                 print_steps(document, before, 1)
-                    if document.paragraphs[-1].text == "Test Setup":
-                        document.add_paragraph('No test setup information available.')
+                    if document.paragraphs[-1].text == "Предворительные шаги:":
+                        document.add_paragraph('(отсутствуют)')
 
-                    document.add_heading('Test Body', level=2)
+                    document.add_heading('Тестовый сценарий:', level=2)
                     print_attachments(document, test)
                     print_steps(document, test)
-                    if document.paragraphs[-1].text == "Test Body":
-                        document.add_paragraph('No test body information available.')
+                    if document.paragraphs[-1].text == "Тестовый сценарий:":
+                        document.add_paragraph('(шаги сценария отсутствуют)')
 
-                    document.add_heading('Test Teardown', level=2)
-                    for parent in test['parents']:
-                        if 'afters' in parent:
-                            for after in parent['afters']:
-                                document.add_paragraph('[Fixture] {}'.format(after['name']), style="Step")
-                                print_attachments(document, after)
-                                print_steps(document, after, 1)
-                    if document.paragraphs[-1].text == "Test Teardown":
-                        document.add_paragraph('No test teardown information available.')
+                    # document.add_heading('Test Teardown', level=2)
+                    # for parent in test['parents']:
+                    #     if 'afters' in parent:
+                    #         for after in parent['afters']:
+                    #             document.add_paragraph('[Fixture] {}'.format(after['name']), style="Step")
+                    #             print_attachments(document, after)
+                    #             print_steps(document, after, 1)
+                    # if document.paragraphs[-1].text == "Test Teardown":
+                    #     document.add_paragraph('No test teardown information available.')
 
                     document.add_page_break()
 
